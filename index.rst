@@ -108,7 +108,6 @@ This class is a subclass of ``dmlc::Parameter``.
     "base_score" : *string*,
     "num_feature" : *string*,
     "num_class" : *string*,
-    "contain_extra_attrs" : *string*,
     "contain_eval_metrics" : *string*
   }
 
