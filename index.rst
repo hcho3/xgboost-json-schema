@@ -270,7 +270,8 @@ The ``feature_id`` and ``threshold`` fields specify the feature ID and threshold
 used in the test node, where the test is of form ``data[feature_id] < threshold``.
 The ``child_left_id`` and ``child_right_id`` fields specify the nodes to be
 taken in a tree traversal when the test ``data[feature_id] < threshold`` is true
-and false, respectively. The ``default_left`` field indicates the default
+and false, respectively. The node IDs are 0-based offsets to the ``nodes``
+arrays in RegTree_. The ``default_left`` field indicates the default
 direction in a tree traversal when feature value for ``feature_id`` is missing.
 
 NodeStat
