@@ -218,7 +218,7 @@ This class is a subclass of ``dmlc::Parameter``.
 
   {
     "num_deleted" : *integer*,
-    "max_depth" : *integer*,
+    "max_depth" : *integer*
   }
 
 Node
