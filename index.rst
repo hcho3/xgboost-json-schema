@@ -306,8 +306,8 @@ This class is a subclass of ``dmlc::Parameter``.
 .. parsed-literal::
 
   {
-    "num_feature" : *string*,
-    "num_output_group" : *string*
+    "num_feature" : *64-bit integer*,
+    "num_output_group" : *integer*
   }
 
 PredictorParam
