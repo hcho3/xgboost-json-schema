@@ -277,7 +277,7 @@ direction in a tree traversal when feature value for ``feature_id`` is missing.
 NodeStat
 --------
 Statistics for each node is represented as a JSON array of a fixed size, each
-element being determined by the ``node_stat_schema`` field of XGBoostModel_.
+element storing the following fields:
 
 .. parsed-literal::
 
