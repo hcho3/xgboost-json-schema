@@ -5,8 +5,9 @@ XGBoost JSON Schema, Version 1.0
 Preface
 =======
 This document contains an exhaustive description of the XGBoost JSON schema, a
-mapping between XGBoost object classes and JSON objects. The version 1.0 of the
-schema aims to follow the behavior of the current binary serialization method.
+mapping between XGBoost object classes and JSON objects and arrays. The version
+1.0 of the schema aims to follow the behavior of the current binary
+serialization method.
 
 Representation of ``dmlc::Parameter`` objects
 ---------------------------------------------
@@ -67,6 +68,8 @@ refers to 32-bit integer unless stated otherwise.
 Full content of the schema
 ==========================
 
+Note: Click :ref:`here <example>` for a minimal example of the current schema.
+
 .. contents:: :local:
 
 XGBoostModel
@@ -77,12 +80,8 @@ This is the root object for XGBoost model.
 
   {
     "version" : [1, 0],
-    "leaf_node_schema" : [
-      ["is_leaf", "true"],
-      ["leaf_output", "floating-point"]
-    ],
+    "leaf_node_schema" : ["leaf_output", "floating-point"],
     "test_node_schema" : [
-      ["is_leaf", "false"],
       ["child_left_id", "integer"],
       ["child_right_id", "integer"],
       ["feature_id", "integer"],
@@ -93,7 +92,6 @@ This is the root object for XGBoost model.
       ["loss_chg", "floating-point"],
       ["sum_hess", "floating-point"],
       ["base_weight", "floating-point"],
-      ["leaf_child_cnt", "integer"],
       ["instance_cnt", "64-bit integer"]
     ],
     "learner" : Learner_
@@ -124,6 +122,13 @@ Learner
     *"count_poisson_max_delta_step"* : *floating-point*
   }
 
+The ``count_poisson_max_delta_step`` field is only used for Poisson regression
+task, where ``name_obj`` (name of objective function) is set to
+``count:poisson``.
+
+The ``attributes`` is a generic key-value collection, retained for compatibility
+purposes with the current binary serialization method.
+
 LearnerModelParam
 -----------------
 This class is a subclass of ``dmlc::Parameter``.
@@ -133,42 +138,50 @@ This class is a subclass of ``dmlc::Parameter``.
   {
     "base_score" : *floating-point*,
     "num_feature" : *64-bit integer*,
-    "num_class" : *integer*
+    *"num_class"* : *integer*
   }
+
+The ``num_class`` is used only for multi-class classification task, in which it
+indicates the number of output classes.
 
 GBM
 ---
 Currently, we may choose one of the three subclasses for this placeholder:
 
-* GBTree_: decision tree models
+* GBTree_: decision tree models (``name_gbm="gbtree"``)
 * Dart_: DART (Dropouts meet Multiple Additive Regression Trees) models
-* GBLinear_: linear models
+  (``name_gbm="dart"``)
+* GBLinear_: linear models (``name_gbm="gblinear"``)
 
-All three subclasses will have ``gbm_variant`` field, so that we can distinguish
-among the three.
+We can determine which subclass was used by looking at the ``name_gbm`` field
+of Learner_.
 
 GBTree
 ------
 .. parsed-literal::
 
   {
-    "gbm_variant" : "GBTree",
     "model_param" : GBTreeModelParam_,
     "trees" : [ *array of* RegTree_ ],
     *"tree_info"* : [ *array of integer* ]
   }
+
+``tree_info`` is a reserved field, retained for the sake of compatibility
+with the current binary serialization method.
 
 Dart
 ----
 .. parsed-literal::
 
   {
-    "gbm_variant" : "Dart",
     "model_param" : GBTreeModelParam_,
     "trees" : [ *array of* RegTree_ ],
     *"tree_info"* : [ *array of int* ],
     *"weight_drop"* : [ *array of floating-point* ]
   }
+
+``tree_info`` is a reserved field, retained for the sake of compatibility
+with the current binary serialization method.
 
 RegTree
 -------
@@ -217,9 +230,13 @@ This class is a subclass of ``dmlc::Parameter``.
 .. parsed-literal::
 
   {
-    "num_deleted" : *integer*,
-    "max_depth" : *integer*
+    *"num_deleted"* : *integer*
   }
+
+The ``num_deleted`` field is optional and indicates that some node IDs are
+marked deleted and thus should be re-used for creating new nodes. This exists
+since the pruning method leaves gaps in node IDs. When omitted, ``num_deleted``
+is assumed to be zero. This field may be deprecated in the future.
 
 Node
 ----
@@ -228,21 +245,16 @@ We may choose one of the two subclasses for this placeholder:
 * LeafNode_: leaf node (no child node, real output)
 * TestNode_: non-leaf node (two child nodes, test condition)
 
-The subclasses are distinguished by the boolean value of ``is_leaf`` field.
+We distinguish the two types of node by whether the node representation is a
+JSON array (test node) or a single floating-point number (leaf node).
 
 LeafNode
 --------
-Each leaf node is represented as a JSON array of a fixed size, each element
-storing the following fields:
+Each leaf node is represented as a single floating-point number:
 
 .. parsed-literal::
 
-  [
-    true (is_leaf),
-    *floating-point* (leaf_output)
-  ]
-
-The ``is_leaf`` field (first entry) shall be set to ``true`` for all leaf nodes.
+  *floating-point* (leaf_output)
 
 The ``leaf_output`` field specifies the real-valued output associated with
 the leaf node.
@@ -255,16 +267,12 @@ storing the following fields:
 .. parsed-literal::
 
   [
-    false (is_leaf),
     *integer* (child_left_id),
     *integer* (child_right_id),
     *unsigned integer* (feature_id),
     *floating-point* (threshold),
     *boolean* (default_left)
   ]
-
-The ``is_leaf`` field (first entry) shall be set to ``false`` for all test
-nodes.
 
 The ``feature_id`` and ``threshold`` fields specify the feature ID and threshold
 used in the test node, where the test is of form ``data[feature_id] < threshold``.
@@ -285,7 +293,6 @@ element storing the following fields:
     *floating-point* (loss_chg),
     *floating-point* (sum_hess),
     *floating-point* (base_weight),
-    *integer* (leaf_child_cnt),
     *64-bit integer* (instance_cnt)
   ]
 
@@ -294,7 +301,6 @@ GBLinear
 .. parsed-literal::
 
   {
-    "gbm_variant" : "GBLinear",
     "model_param" : GBLinearModelParam_,
     "weight" : [ *array of floating-point* ]
   }
@@ -325,3 +331,88 @@ StringKeyValuePairCollection
 This class is a collection of key-value pairs. Both keys and values must be
 string types, and keys must consist of alphabet letters, digits (0-9), and
 underscore (``_``).
+
+.. _example:
+
+Minimal example
+===============
+
+.. code-block:: json
+
+  {
+    "version" : [1, 0],
+    "leaf_node_schema" : ["leaf_output", "floating-point"],
+    "test_node_schema" : [
+      ["child_left_id", "integer"],
+      ["child_right_id", "integer"],
+      ["feature_id", "integer"],
+      ["threshold", "floating-point"],
+      ["default_left", "boolean"]
+    ],
+    "node_stat_schema": [
+      ["loss_chg", "floating-point"],
+      ["sum_hess", "floating-point"],
+      ["base_weight", "floating-point"],
+      ["instance_cnt", "64-bit integer"]
+    ],
+    "learner" : {
+      "learner_model_param" : {
+        "base_score" : 0.5,
+        "num_feature" : 126
+      },
+      "predictor_param" : {
+        "predictor" : "cpu_predictor"
+      },
+      "name_obj" : "binary:logistic",
+      "name_gbm" : "gbtree",
+      "gbm" : {
+        "model_param" : {
+          "num_roots" : 1,
+          "num_feature" : 126,
+          "num_output_group" : 1
+        },
+        "trees" : [
+          {
+            "tree_param" : {},
+            "nodes" : [
+              [1, 2,  28,  0.0,  true],
+              [3, 4,  55,  0.5, false],
+              [5, 6, 108,  1.0,  true],
+               1.8,
+              -1.9,
+              [7, 8,  66, -0.5,  true],
+               1.87,
+              -1.99,
+               0.94
+            ],
+            "stats" : [
+              [200.0, 1635.2,  0.2, 4000],
+              [150.2,  922.8,  1.1, 2200],
+              [300.4,  712.5, -1.5, 1800],
+              [  0.0,  808.3,  0.0, 2000],
+              [  0.0,  114.5,  0.0,  200],
+              [100.1,  698.0, -1.8, 1600],
+              [  0.0,   14.5,  0.0,  200],
+              [  0.0,  686.8,  0.0, 1500],
+              [  0.0,   11.2,  0.0,  100]
+            ]
+          },
+          {
+            "tree_param" : {},
+            "nodes" : [
+              [1, 2, 5, 0.5, false],
+               1.0,
+              -1.0
+            ],
+            "stats" : [
+              [335.0, 135.2,  0.6, 4000],
+              [  0.0,  88.3,  0.0, 3000],
+              [  0.0,  46.9,  0.0, 1000]
+            ]
+          }
+        ]
+      },
+      "attributes" : {},
+      "eval_metrics" : [ "auc" ]
+    }
+  }
