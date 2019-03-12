@@ -193,10 +193,7 @@ RegTree
     "stats" : [ *array of* NodeStat_ ],
   }
 
-The first ``num_roots`` nodes in the ``nodes`` array specify root node(s).
-(The ``num_roots`` field is specified in GBTreeModelParam_.) For most use cases,
-the decision tree has one root and ``num_roots`` is 1, so the first entry in the
-``nodes`` array specifies the root node.
+The first node in the ``nodes`` array specify root node.
 
 The ``nodes`` array specify an adjacency list for an acyclic directed binary
 tree graph. Each tree node has zero or two outgoing edges and exactly one
@@ -209,7 +206,6 @@ This class is a subclass of ``dmlc::Parameter``.
 .. parsed-literal::
 
   {
-    "num_roots" : *integer*,
     "num_feature" : *64-bit integer*,
     "num_output_group" : *integer*
   }
@@ -219,9 +215,6 @@ set to 1 for all tasks except multi-class classification. For multi-class
 classification, ``num_output_group`` must be set to the number of classes. This
 must be identical to the value for ``num_class`` field of LearnerModelParam_
 that was provided at training time.
-
-The ``num_roots`` specified the number of roots in each tree. For most use
-cases, this should be set to 1.
 
 TreeParam
 ---------
@@ -367,7 +360,6 @@ Minimal example
       "name_gbm" : "gbtree",
       "gbm" : {
         "model_param" : {
-          "num_roots" : 1,
           "num_feature" : 126,
           "num_output_group" : 1
         },
