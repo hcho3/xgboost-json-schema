@@ -80,32 +80,8 @@ This is the root object for XGBoost model.
 
   {
     "version" : [1, 0],
-    "leaf_node_schema" : ["leaf_output", "floating-point"],
-    "test_node_schema" : [
-      ["child_left_id", "integer"],
-      ["child_right_id", "integer"],
-      ["feature_id", "integer"],
-      ["threshold", "floating-point"],
-      ["default_left", "boolean"]
-    ],
-    "node_stat_schema": [
-      ["loss_chg", "floating-point"],
-      ["sum_hess", "floating-point"],
-      ["base_weight", "floating-point"],
-      ["instance_cnt", "64-bit integer"]
-    ],
     "learner" : Learner_
   }
-
-The fields ``leaf_node_schema``, ``test_node_schema``, and ``node_stat_schema``
-exist for informational purposes only, describing the classes LeafNode_,
-TestNode_, and NodeStat_ respectively. These schema fields may be omitted
-altogether for the interest of space.
-
-The classes LeafNode_, TestNode_, and NodeStat_ are represented as JSON
-arrays so that we don't have to repeat the field names over and over again.
-Instead, the field names are listed only once (or not at all) in the beginning
-of the serialized JSON file.
 
 Learner
 -------
@@ -334,20 +310,6 @@ Minimal example
 
   {
     "version" : [1, 0],
-    "leaf_node_schema" : ["leaf_output", "floating-point"],
-    "test_node_schema" : [
-      ["child_left_id", "integer"],
-      ["child_right_id", "integer"],
-      ["feature_id", "integer"],
-      ["threshold", "floating-point"],
-      ["default_left", "boolean"]
-    ],
-    "node_stat_schema": [
-      ["loss_chg", "floating-point"],
-      ["sum_hess", "floating-point"],
-      ["base_weight", "floating-point"],
-      ["instance_cnt", "64-bit integer"]
-    ],
     "learner" : {
       "learner_model_param" : {
         "base_score" : 0.5,
