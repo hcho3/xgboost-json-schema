@@ -1,0 +1,557 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions" : {
+    "gbtree_train_param" : {
+      "type" : "object",
+      "properties" : {
+        "num_parallel_tree" : { "type" : "integer" },
+        "updater_seq" : { "type" : "array", "items" : { "type" : "string" } },
+        "process_type" : { "enum" : [ "default", "update" ] },
+        "predictor" : { "type" : "string" }
+      },
+      "required" : [ "num_parallel_tree", "updater_seq",
+                     "process_type", "predictor" ]
+    },
+    "gbtree_model_param" : {
+      "type" : "object",
+      "properties" : {
+        "num_trees" : { "type" : "integer" },
+        "num_feature" : { "type" : "integer" },
+        "num_output_group" : { "type" : "integer" }
+      },
+      "required" : [ "num_trees", "num_feature", "num_output_group" ]
+    },
+    "tree_param" : {
+      "type" : "object",
+      "properties" : {
+        "num_nodes" : { "type" : "integer" },
+        "num_deleted" : { "type" : "integer" },
+        "num_feature" : { "type" : "integer" }
+      },
+      "required" : [ "num_nodes", "num_feature" ]
+    },
+    "feature_selector" : {
+      "enum" : [ "cyclic", "shuffle", "random", "greedy", "thrifty" ]
+    },
+    "monotone_constraints" : {
+      "type" : "array",
+      "items" : { "type" : "integer", "enum" : [-1, 0, 1] }
+    },
+    "coordinate_train_param" : {
+      "type" : "object",
+      "properties" : {
+        "learning_rate" : { "type" : "number" },
+        "reg_lambda" : { "type" : "number" },
+        "reg_alpha" : { "type" : "number" },
+        "feature_selector" : { "$ref" : "#/definitions/feature_selector" },
+        "top_k" : { "type" : "number" },
+        "reg_lambda_denorm" : { "type" : "number" },
+        "reg_alpha_denorm" : { "type" : "number" }
+      },
+      "required" : [ "learning_rate", "reg_lambda", "reg_alpha",
+                     "feature_selector", "top_k", "reg_lambda_denorm",
+                     "reg_alpha_denorm" ]
+    },
+    "gbtree_model" : {
+      "type" : "object",
+      "properties" : {
+        "model_param" : { "$ref" : "#/definitions/gbtree_model_param" },
+        "trees" : {
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "properties" : {
+              "tree_param" : { "$ref" : "#/definitions/tree_param" },
+              "nodes" : {
+                "type" : "array",
+                "items" : {
+                  "oneOf" : [
+                    { "type" : "number" },
+                    { 
+                      "type" : "array",
+                      "items" : [
+                        { "title" : "child_left_id", "type" : "integer" },
+                        { "title" : "child_right_id", "type" : "integer" },
+                        { "title" : "feature_id", "type" : "integer" },
+                        { "title" : "threshold", "type" : "number" },
+                        { "title" : "default_left", "type" : "boolean" }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "stats" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "array",
+                  "items" : [
+                    { "title" : "loss_chg", "type" : "number" },
+                    { "title" : "sum_hess", "type" : "number" },
+                    { "title" : "base_weight", "type" : "number" },
+                    { "title" : "instance_cnt", "type" : "integer" }
+                  ]
+                }
+              }
+            },
+            "required" : [ "tree_param", "nodes", "stats" ]
+          }
+        },
+        "tree_info" : { "type" : "array", "items" : { "type" : "integer" } }
+      },
+      "required" : [ "model_param", "trees" ]
+    },
+    "tree_train_param" : {
+      "type" : "object",
+      "properties" : {
+        "learning_rate" : { "type" : "number" },
+        "min_split_loss" : { "type" : "number" },
+        "max_depth" : { "type" : "integer" },
+        "max_leaves" : { "type" : "integer" },
+        "max_bin" : { "type" : "integer" },
+        "grow_policy" : { "enum" : [ "depthwise", "lossguide" ] },
+        "min_child_weight" : { "type" : "number" },
+        "reg_lambda" : { "type" : "number" },
+        "reg_alpha" : { "type" : "number" },
+        "default_direction" : { "enum" : [ "learn", "left", "right" ] },
+        "max_delta_step" : { "type" : "number" },
+        "subsample" : { "type" : "number" },
+        "colsample_bynode" : { "type" : "number" },
+        "colsample_bylevel" : { "type" : "number" },
+        "colsample_bytree" : { "type" : "number" },
+        "opt_dense_col" : { "type" : "number" },
+        "sketch_eps" : { "type" : "number" },
+        "sketch_ratio" : { "type" : "number" },
+        "parallel_option" : { "type" : "integer", "enum" : [0, 1, 2] },
+        "cache_opt" : { "type" : "boolean" },
+        "refresh_leaf" : { "type" : "boolean" },
+        "monotone_constraints" : {
+          "$ref" : "#/definitions/monotone_constraints"
+        },
+        "split_evaluator" : {
+          "type" : "array",
+          "items" : { "enum" : [ "elastic_net", "monotonic", "interaction" ] }
+        },
+        "sparse_threshold" : { "type" : "number" },
+        "enable_feature_grouping" : { "type" : "boolean" },
+        "max_conflict_rate" : { "type" : "number" },
+        "max_search_group" : { "type" : "integer" }
+      },
+      "required" : [ "learning_rate", "min_split_loss", "max_depth",
+                     "max_leaves", "max_bin", "grow_policy",
+                     "min_child_weight", "reg_lambda", "reg_alpha",
+                     "default_direction", "max_delta_step", "subsample",
+                     "colsample_bynode", "colsample_bylevel",
+                     "colsample_bytree", "opt_dense_col", "sketch_eps",
+                     "sketch_ratio", "parallel_option", "cache_opt",
+                     "refresh_leaf", "monotone_constraints", "split_evaluator",
+                     "sparse_threshold", "enable_feature_grouping",
+                     "max_conflict_rate", "max_search_group" ]
+    },
+    "split_evaluator" : {
+      "oneOf" : [
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "ElasticNet" },
+            "reg_lambda" : { "type" : "number" },
+            "reg_alpha" : { "type" : "number" }
+          },
+          "required" : [ "name", "reg_lambda", "reg_alpha" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "MonotonicConstraint" },
+            "monotone_constraints" : {
+              "type" : "array",
+              "items" : { "$ref" : "#/definitions/monotone_constraints" }
+            }
+          },
+          "required" : [ "name", "monotone_constraints" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "InteractionConstraint" },
+            "interaction_constraints" : { "type" : "string" },
+            "num_feature" : { "type" : "integer" }
+          },
+          "required" : [ "name", "interaction_constraints", "num_feature" ]
+        }
+      ]
+    },
+    "tree_updater" : {
+      "oneOf" : [
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "ColMaker" },
+            "split_evaluator" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/split_evaluator"
+              }
+            }
+          },
+          "required" : [ "name", "split_evaluator" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "HistMaker" }
+          },
+          "required" : [ "name" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "QuantileHistMaker" },
+            "split_evaluator" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/definitions/split_evaluator"
+              }
+            }
+          },
+          "required" : [ "name", "split_evaluator" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "GPUMaker" }
+          },
+          "required" : [ "name" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "GPUHistMaker" },
+            "single_precision_histogram" : { "type" : "boolean" },
+            "gpu_batch_nrows" : { "type" : "integer" }
+          },
+          "required" : [ "name", "single_precision_histogram",
+                         "gpu_batch_nrows" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "TreePruner" }
+          },
+          "required" : [ "name" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "TreeSyncher" }
+          },
+          "required" : [ "name" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "SketchMaker" }
+          },
+          "required" : [ "name" ]
+        },
+        {
+          "type" : "object",
+          "properties" : {
+            "name" : { "const" : "TreeRefresher" }
+          },
+          "required" : [ "name" ]
+        }
+      ]
+    }
+  },
+  "type" : "object",
+  "properties": {
+    "version" : {
+      "type" : "array",
+      "items" : [ { "const" : 1 }, { "const" : 0 } ],
+      "additionalItems": false
+    },
+    "learner" : {
+      "type" : "object",
+      "properties" : {
+        "learner_train_param" : {
+          "type" : "object",
+          "properties" : {
+            "seed" : { "type" : "integer" },
+            "seed_per_iteration" : { "type" : "boolean" },
+            "dsplit" : {
+              "type" : "string", "enum" : [ "auto", "col", "row" ]
+            },
+            "tree_method" : {
+              "type" : "string",
+              "enum" : [ "auto", "approx", "exact",
+                         "hist", "gpu_exact", "gpu_hist" ]
+            },
+            "disable_default_eval_metric" : { "type" : "boolean" },
+            "base_score" : { "type" : "number" },
+            "num_feature" : { "type" : "integer" },
+            "num_class" : { "type" : "integer" },
+            "gpu_id" : { "type" : "integer" },
+            "n_gpus" : { "type" : "integer" }
+          },
+          "required" : [ "seed", "seed_per_iteration", "dsplit", "tree_method",
+                         "disable_default_eval_metric", "base_score",
+                         "num_feature" ]
+        },
+        "gradient_booster" : {
+          "oneOf" : [
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "GBTree" },
+                "num_boosting_round" : { "type" : "integer" },
+                "gbtree_train_param" : {
+                  "$ref" : "#/definitions/gbtree_train_param"
+                },
+                "updater_train_param" : {
+                  "$ref" : "#/definitions/tree_train_param"
+                },
+                "updaters" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/definitions/tree_updater"
+                  }
+                },
+                "model" : {
+                  "$ref" : "#/definitions/gbtree_model"
+                }
+              },
+              "required" : [ "name", "num_boosting_round", "gbtree_train_param",
+                             "updater_train_param", "updaters", "model" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "Dart" },
+                "num_boosting_round" : { "type" : "integer" },
+                "gbtree_train_param" : {
+                  "$ref" : "#/definitions/gbtree_train_param"
+                },
+                "dart_train_param" : {
+                  "type" : "object",
+                  "properties" : {
+                    "sample_type" : { "enum" : [ "uniform", "weighted" ] },
+                    "normalize_type" : { "enum" : [ "tree", "forest" ] },
+                    "rate_drop" : { "type" : "number" },
+                    "one_drop" : { "type" : "boolean" },
+                    "skip_drop" : { "type" : "number" },
+                    "learning_rate" : { "type" : "number" }
+                  },
+                  "required" : [ "sample_type", "normalize_type", "rate_drop",
+                                 "one_drop", "skip_drop", "learning_rate" ]
+                },
+                "updater_train_param" : {
+                  "$ref" : "#/definitions/tree_train_param"
+                },
+                "updaters" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/definitions/tree_updater"
+                  }
+                },
+                "model" : {
+                  "$ref" : "#/definitions/gbtree_model"
+                },
+                "weight_drop" : {
+                  "type" : "array", "items" : { "type" : "number" }
+                }
+              },
+              "required" : [ "name", "num_boosting_round", "gbtree_train_param",
+                             "dart_train_param", "updater_train_param",
+                             "updaters", "model" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "GBLinear" },
+                "num_boosting_round" : { "type" : "integer" },
+                "gblinear_train_param" : {
+                  "type" : "object",
+                  "properties" : {
+                    "updater" : { "type" : "string" },
+                    "tolerance" : { "type" : "number" }
+                  },
+                  "required" : [ "updater", "tolerance" ]
+                },
+                "model" : {
+                  "type" : "object",
+                  "properties" : {
+                    "model_param" : {
+                      "type" : "object",
+                      "properties" : {
+                        "num_feature" : { "type" : "integer" },
+                        "num_output_group" : { "type" : "integer" }
+                      },
+                      "required" : [ "num_feature", "num_output_group" ]
+                    },
+                    "weight" : {
+                      "type" : "array", "items" : { "type" : "number" }
+                    }
+                  },
+                  "required" : [ "model_param", "weight" ]
+                },
+                "updater" : {
+                  "oneOf" : [
+                    {
+                      "type" : "object",
+                      "properties" : {
+                        "name" : { "const" : "CoordinateUpdater" },
+                        "train_param" : {
+                          "$ref" : "#/definitions/coordinate_train_param"
+                        }
+                      },
+                      "required" : [ "name", "train_param" ]
+                    },
+                    {
+                      "type" : "object",
+                      "properties" : {
+                        "name" : { "const" : "GPUCoordinateUpdater" },
+                        "train_param" : {
+                          "$ref" : "#/definitions/coordinate_train_param"
+                        }
+                      },
+                      "required" : [ "name", "train_param" ]
+                    },
+                    {
+                      "type" : "object",
+                      "properties" : {
+                        "name" : { "const" : "ShotgunUpdater" },
+                        "train_param" : {
+                          "type" : "object",
+                          "properties" : {
+                            "learning_rate" : { "type" : "number" },
+                            "reg_lambda" : { "type" : "number" },
+                            "reg_alpha" : { "type" : "number" },
+                            "feature_selector" : {
+                              "$ref" : "#/definitions/feature_selector"
+                            },
+                            "reg_lambda_denorm" : { "type" : "number" },
+                            "reg_alpha_denorm" : { "type" : "number" }
+                          },
+                          "required": [
+                            "learning_rate", "reg_lambda", "reg_alpha",
+                            "feature_selector", "reg_lambda_denorm",
+                            "reg_alpha_denorm"
+                          ]
+                        }
+                      },
+                      "required" : [ "name", "train_param" ]
+                    }
+                  ]
+                }
+              },
+              "required" : [ "name", "num_boosting_round",
+                             "gblinear_train_param", "model", "updater" ]
+            }
+          ]
+        },
+        "eval_metrics" : { "type" : "array", "items" : { "type" : "string" } },
+        "objective" : {
+          "oneOf" : [
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "RegLossObj" },
+                "loss_type" : {
+                  "enum" : [ "LinearSquareLoss", "LogisticRegression",
+                             "LogisticClassification", "LogisticRaw" ]
+                },
+                "scale_pos_weight" : { "type" : "number" }
+              },
+              "required" : [ "name", "loss_type", "scale_pos_weight" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "SoftmaxMultiClassObj" },
+                "num_class" : { "type" : "integer" },
+                "output_prob" : { "type" : "boolean" }
+              },
+              "required" : [ "name", "num_class", "output_prob" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "HingeObj" }
+              },
+              "required" : [ "name" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "LambdaRankObj" },
+                "num_pairsample" : { "type" : "integer" },
+                "fix_list_weight" : { "type" : "number" }
+              },
+              "required" : [ "name", "num_pairsample", "fix_list_weight" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "PairwiseRankObj" },
+                "num_pairsample" : { "type" : "integer" },
+                "fix_list_weight" : { "type" : "number" }
+              },
+              "required" : [ "name", "num_pairsample", "fix_list_weight" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "LambdaRankObjNDCG" },
+                "num_pairsample" : { "type" : "integer" },
+                "fix_list_weight" : { "type" : "number" }
+              },
+              "required" : [ "name", "num_pairsample", "fix_list_weight" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "LambdaRankObjMAP" },
+                "num_pairsample" : { "type" : "integer" },
+                "fix_list_weight" : { "type" : "number" }
+              },
+              "required" : [ "name", "num_pairsample", "fix_list_weight" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "PoissonRegression" },
+                "max_delta_step" : { "type" : "number" }
+              },
+              "required" : [ "name", "max_delta_step" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "CoxRegression" }
+              },
+              "required" : [ "name" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "GammaRegression" }
+              },
+              "required" : [ "name" ]
+            },
+            {
+              "type" : "object",
+              "properties" : {
+                "name" : { "const" : "TweedieRegression" },
+                "tweedie_variance_power" : { "type" : "number" }
+              },
+              "required" : [ "name", "tweedie_variance_power" ]
+            }
+          ]
+        }
+      },
+      "required" : [ "learner_train_param", "gradient_booster", "eval_metrics",
+                     "objective" ]
+    }
+  },
+  "required": [ "version", "learner" ]
+}
